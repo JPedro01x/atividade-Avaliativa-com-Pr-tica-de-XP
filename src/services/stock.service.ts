@@ -32,8 +32,8 @@ export class StockService {
   }
 
   /**
-   * Avalia o consumo por m² (Cm²) e o saldo em estoque para um dado SKU.
-   * [Versão Inicial - Requisito Original RF-12]
+   * Avalia o consumo por m² (Cm²), o saldo em estoque e calcula bônus/alertas críticos.
+   * [Implementação do Requisito Alterado - RF-12 Modificado]
    */
   public analyzeCm2AndStock(sku: string, targetCm2: number): Cm2AnalysisResult {
     const item = this.items.get(sku);
@@ -48,13 +48,29 @@ export class StockService {
     const currentCm2 = totalAreaM2 > 0 ? totalConsumed / totalAreaM2 : 0;
     const deviationPercent = targetCm2 > 0 ? ((currentCm2 - targetCm2) / targetCm2) * 100 : 0;
 
-    // Regra Original: Alerta padrão de Estoque Mínimo
     let alertPriority: AlertPriority = 'NORMAL';
-    if (item.quantity <= item.minStock) {
-      alertPriority = 'ALERTA_ESTOQUE_MINIMO';
+    let baseReorder = 0;
+    let suggestedReorderQuantity = 0;
+
+    const isLowStock = item.quantity <= item.minStock;
+    if (isLowStock) {
+      baseReorder = item.minStock * 2 - item.quantity;
+      if (deviationPercent > 15) {
+        alertPriority = 'CRITICA_DESVIO_ORCAMENTARIO';
+        suggestedReorderQuantity = Math.round(baseReorder * 1.2); // Margem de 20%
+      } else {
+        alertPriority = 'ALERTA_ESTOQUE_MINIMO';
+        suggestedReorderQuantity = baseReorder;
+      }
     }
 
-    const suggestedReorder = item.quantity <= item.minStock ? item.minStock * 2 - item.quantity : 0;
+    let appliedEfficiencyBonusPercent = 0;
+    let unitPriceWithBonus = item.unitPrice;
+
+    if (deviationPercent < -10) {
+      appliedEfficiencyBonusPercent = 5;
+      unitPriceWithBonus = item.unitPrice * 0.95;
+    }
 
     return {
       sku: item.sku,
@@ -64,9 +80,9 @@ export class StockService {
       targetCm2,
       cm2DeviationPercent: Math.round(deviationPercent * 100) / 100,
       alertPriority,
-      suggestedReorderQuantity: Math.max(0, suggestedReorder),
-      appliedEfficiencyBonusPercent: 0, // Ainda não implementado no requisito original
-      unitPriceWithBonus: item.unitPrice
+      suggestedReorderQuantity: Math.max(0, suggestedReorderQuantity),
+      appliedEfficiencyBonusPercent,
+      unitPriceWithBonus
     };
   }
 }
