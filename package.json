@@ -1,0 +1,19 @@
+{
+  "name": "atividade-avaliativa-tdd-obra360",
+  "version": "1.0.0",
+  "description": "Atividade Avaliativa TDD - Modificacao do RF-12 Obra360",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc"
+  },
+  "keywords": ["tdd", "vitest", "typescript", "obra360"],
+  "author": "João Pedro",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  }
+}
